@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
-export const runtime = "nodejs";
-
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!
