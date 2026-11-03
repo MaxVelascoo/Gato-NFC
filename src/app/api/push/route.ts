@@ -31,7 +31,10 @@ type ClaimedNotification = {
 };
 
 function configureWebPush() {
-  const subject = process.env.VAPID_SUBJECT;
+  const configuredSubject = process.env.VAPID_SUBJECT?.trim() ?? "";
+  const subject = /^(mailto:\S+@\S+|https:\/\/\S+)$/i.test(configuredSubject)
+    ? configuredSubject
+    : "https://gato-nfc.vercel.app";
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   if (!subject || !publicKey || !privateKey) return false;
