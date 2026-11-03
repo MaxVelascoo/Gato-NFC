@@ -456,7 +456,7 @@ export default function Home() {
           <div className="mobile-brand-row">
             <a className="mobile-brand" href="#inicio" onClick={() => setActiveNav("Inicio")} aria-label="MiauCare, inicio"><Image className="brand-logo" src="/logo_grande.png" alt="MiauCare" width={2172} height={724} priority /></a>
             <div className="mobile-brand-actions">
-              <button className="mobile-refresh" onClick={() => void loadDashboard()} disabled={loading} aria-label="Actualizar datos" title="Actualizar datos"><Icon name="sync" size={19} /></button>
+              <button className="mobile-refresh" onClick={() => void loadDashboard()} disabled={loading} aria-label="Actualizar datos" title="Actualizar datos"><Image src="/sync_logo.png" width={348} height={436} alt="" /></button>
               <a className="mobile-bell" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={21} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
             </div>
           </div>
