@@ -88,32 +88,25 @@ export default function NotificacionesPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-5 p-6">
-      <h1 className="text-3xl font-bold">
-        🐱 Gato NFC
-      </h1>
-
-      <p className="text-center text-gray-600">
-        Activa las notificaciones para recibir
-        recordatorios de los cuidados.
-      </p>
-
-      <input
-        type="password"
-        placeholder="Token de configuración"
-        value={token}
-        onChange={(e) => setToken(e.target.value)}
-        className="rounded-lg border p-3"
-      />
-
-      <button
-        onClick={activarNotificaciones}
-        className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
-      >
-        🔔 Activar notificaciones
-      </button>
-
-      <p>{status}</p>
+    <main className="notifications-page">
+      <section className="notifications-card">
+        <div className="notifications-brand"><span aria-hidden="true">◉</span> MiauCare</div>
+        <div>
+          <h1>Notificaciones</h1>
+          <p>Activa los avisos para recibir recordatorios de los cuidados de tus gatos.</p>
+        </div>
+        <label>
+          Token de configuración
+          <input
+            type="password"
+            placeholder="Introduce el token"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+          />
+        </label>
+        <button onClick={activarNotificaciones}>Activar notificaciones</button>
+        <p className="notifications-status" role="status">{status}</p>
+      </section>
     </main>
   );
 }
