@@ -123,6 +123,22 @@ function dateLabel(date: string) {
   return new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date));
 }
 
+function activityDayLabel(timestamp: string, nowTimestamp: number | null) {
+  const eventDate = new Date(timestamp);
+  const eventDay = new Date(eventDate);
+  eventDay.setHours(0, 0, 0, 0);
+
+  if (nowTimestamp !== null) {
+    const today = new Date(nowTimestamp);
+    today.setHours(0, 0, 0, 0);
+    const daysAgo = Math.round((today.getTime() - eventDay.getTime()) / 86_400_000);
+    if (daysAgo === 0) return "Hoy";
+    if (daysAgo === 1) return "Ayer";
+  }
+
+  return new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "short" }).format(eventDate);
+}
+
 function ageLabel(birthday: string | null, nowTimestamp: number | null) {
   if (!birthday || nowTimestamp === null) return null;
   const born = new Date(`${birthday}T12:00:00`);
@@ -555,11 +571,16 @@ export default function Home() {
           <section className="panel activity-panel" id="activity">
             <div className="panel-heading"><h2><Icon name="clock" size={24} /> Actividad reciente</h2><button className="text-link" onClick={() => setActiveNav("Historial")}>Ver historial <Icon name="arrow" size={17} /></button></div>
             <div className="activity-list">
-              {(data?.events ?? []).slice(0, 4).map((event) => {
+              {(data?.events ?? []).slice(0, 4).map((event, index, recentEvents) => {
                 const task = taskById.get(event.task_id);
                 const cat = event.cat_id ? catById.get(event.cat_id) : null;
                 const presentation = kindPresentation[task?.kind ?? "other"];
-                return <div className="activity-item" key={event.id}><span className="activity-marker" /><span className={`icon-tile small ${presentation.color}`}><Icon name={presentation.icon} size={21} /></span><p><strong>{new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(event.occurred_at))}</strong><span> · {event.actor} {task?.name ? `registró ${task.name.toLowerCase()}` : "registró un cuidado"}{cat ? ` para ${cat.name}` : ""}{event.amount_grams ? ` · ${event.amount_grams} g` : ""}</span></p></div>;
+                const previousEvent = recentEvents[index - 1];
+                const startsNewDay = previousEvent && new Date(previousEvent.occurred_at).toDateString() !== new Date(event.occurred_at).toDateString();
+                return <div className="activity-entry" key={event.id}>
+                  {startsNewDay && <div className="activity-day-separator"><span>{activityDayLabel(event.occurred_at, now)}</span></div>}
+                  <div className="activity-item"><span className="activity-marker" /><span className={`icon-tile small ${presentation.color}`}><Icon name={presentation.icon} size={21} /></span><p><strong>{new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(event.occurred_at))}</strong><span> · {event.actor} {task?.name ? `registró ${task.name.toLowerCase()}` : "registró un cuidado"}{cat ? ` para ${cat.name}` : ""}{event.amount_grams ? ` · ${event.amount_grams} g` : ""}</span></p></div>
+                </div>;
               })}
               {!loading && !loadError && !(data?.events.length) && <div className="empty-row">Los cuidados registrados aparecerán aquí.</div>}
             </div>
