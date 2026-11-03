@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import Image from "next/image";
 import CatsOverview from "@/components/cats-overview";
 import type { CatCardData, CatCareReminder } from "@/components/cats-overview";
 
@@ -376,8 +377,7 @@ export default function Home() {
     <main className="app-shell">
       <aside className="sidebar">
         <a className="brand" href="#inicio" aria-label="MiauCare, inicio">
-          <span className="brand-icon"><Icon name="cats" size={31} /></span>
-          <span>MiauCare</span>
+          <Image className="brand-logo" src="/logo_grande.png" alt="MiauCare" width={2172} height={724} priority />
         </a>
 
         <nav className="main-nav" aria-label="Navegación principal">
@@ -414,7 +414,7 @@ export default function Home() {
         <header className="topbar">
           <div className="breadcrumb">Hogar <span>/</span> <strong>{activeNav === "Inicio" ? "Resumen" : activeNav}</strong></div>
           <div className="mobile-brand-row">
-            <a className="mobile-brand" href="#inicio" onClick={() => setActiveNav("Inicio")}><span className="brand-icon"><Icon name="cats" size={24} /></span><span>MiauCare</span></a>
+            <a className="mobile-brand" href="#inicio" onClick={() => setActiveNav("Inicio")} aria-label="MiauCare, inicio"><Image className="brand-logo" src="/logo_grande.png" alt="MiauCare" width={2172} height={724} priority /></a>
             <a className="mobile-bell" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={21} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
           </div>
           <div className="topbar-actions">

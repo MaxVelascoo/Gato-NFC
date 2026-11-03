@@ -26,6 +26,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #69b99c; outline-offs
 .app-shell { min-height: 100vh; display: flex; background: radial-gradient(ellipse at 72% -15%, #fff 0, #fafaf7 48%, #f6f7f3 100%); }
 .sidebar { width: 248px; flex: 0 0 248px; border-right: 1px solid #e5e8e2; min-height: 100vh; display: flex; flex-direction: column; padding: 22px 15px 18px; background: rgba(255,255,255,.62); }
 .brand { display: flex; align-items: center; gap: 10px; color: #143d34; text-decoration: none; font-size: 25px; font-weight: 750; letter-spacing: -.8px; padding: 0 12px 36px; }
+.brand-logo { display: block; width: 100%; max-width: 194px; height: auto; object-fit: contain; }
 .brand-icon { display: grid; place-items: center; color: #10382f; }
 .main-nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-link { height: 46px; border: 0; background: transparent; padding: 0 15px; border-radius: 12px; display: flex; align-items: center; gap: 16px; text-align: left; text-decoration: none; color: #152c28; font-size: 15px; cursor: pointer; transition: background .16s ease, transform .16s ease; }
@@ -286,6 +287,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #69b99c; outline-offs
 @media (max-width: 800px) {
   .sidebar { width: 76px; flex-basis: 76px; padding: 18px 9px 15px; align-items: center; }
   .brand { padding: 0 0 30px; font-size: 0; }
+  .brand-logo { width: 56px; max-width: 56px; }
   .brand-icon svg { width: 34px; height: 34px; }
   .nav-link { width: 54px; justify-content: center; padding: 0; }
   .nav-link span, .household, .sidebar-note { display: none; }
@@ -588,8 +590,8 @@ button:focus-visible, a:focus-visible { outline-color: #87958d; }
   .topbar { min-height: 32px; display: block; }
   .breadcrumb, .topbar-actions { display: none; }
   .mobile-brand-row { display: flex; align-items: center; justify-content: space-between; min-height: 34px; }
-  .mobile-brand { display: inline-flex; align-items: center; gap: 8px; color: #202622; text-decoration: none; font-size: 17px; font-weight: 750; letter-spacing: -.45px; }
-  .mobile-brand .brand-icon { display: grid; place-items: center; }
+  .mobile-brand { display: inline-flex; align-items: center; color: #202622; text-decoration: none; }
+  .mobile-brand .brand-logo { width: 146px; max-width: 146px; }
   .mobile-bell { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #e7e8e5; border-radius: 12px; background: #fbfbfa; color: #303832; }
   .mobile-bell .notification-count { top: 1px; right: 1px; }
   .page-heading { align-items: flex-start; margin: 9px 0 12px; }
