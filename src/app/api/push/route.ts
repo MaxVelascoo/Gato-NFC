@@ -77,7 +77,7 @@ async function dispatchDueNotifications() {
 
   for (const notification of (notifications ?? []) as ClaimedNotification[]) {
     const payload = JSON.stringify({
-      title: `Cuidados de hoy · ${notification.task_name}`,
+      title: "MiauCare",
       body: `Toca registrar ${notification.task_name}; han pasado ${notification.interval_hours} h desde el último cuidado.`,
       url: "/",
     });
@@ -200,7 +200,7 @@ export async function POST(request: Request) {
             },
           },
           JSON.stringify({
-            title: "🐱 Gato NFC",
+            title: "MiauCare",
             body: "¡Las notificaciones funcionan!",
             url: "/notificaciones",
           })

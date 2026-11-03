@@ -9,7 +9,7 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(
-      data.title || "Gato NFC",
+      data.title || "MiauCare",
       {
         body: data.body || "Tienes una notificación",
         icon: "/icons/miaucare-192.png",
