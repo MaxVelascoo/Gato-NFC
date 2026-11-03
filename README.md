@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MiauCare
 
-## Getting Started
+Panel doméstico para registrar los cuidados de los gatos con Next.js y Supabase.
 
-First, run the development server:
+## Variables de entorno
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Configura estas variables en `.env` para desarrollo y también en Vercel para producción:
+
+```text
+SUPABASE_URL=...
+SUPABASE_SECRET_KEY=...
+DASHBOARD_PASSWORD=...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`SUPABASE_SECRET_KEY` se usa solo en Route Handlers del servidor. No la conviertas en una variable `NEXT_PUBLIC_`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+En producción, `DASHBOARD_PASSWORD` protege el panel y las operaciones de escritura. Al iniciar sesión se crea una cookie HTTP only de siete días.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Base de datos
 
-## Learn More
+Las migraciones de `supabase/migrations/` amplían las tablas existentes `care_tasks` y `care_events`, crean `cats`, `inventory_items`, `household_members`, historial de peso, recordatorios, historial médico y documentos. La migración del hogar registra como miembros solo a los actores que ya aparecen en el historial. Las fotos y documentos se guardan en buckets privados y la aplicación usa enlaces firmados. Las migraciones conservan las tareas, el historial y la función NFC ya existentes. Aplícalas en orden en Supabase SQL Editor o con una conexión PostgreSQL directa:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+for migration in supabase/migrations/*.sql; do
+  psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$migration"
+done
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Después de aplicar la migración, la página principal carga gatos, rutinas, actividad e inventario desde Supabase. Los formularios de la home y el botón Registrar escriben en la base de datos.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Desarrollo
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm install
+npm run dev
+```

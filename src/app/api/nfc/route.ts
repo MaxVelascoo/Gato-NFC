@@ -41,6 +41,12 @@ export async function POST(request: Request) {
       ? body.task
       : undefined;
 
+  const actor =
+    typeof body === "object" && body !== null &&
+    "actor" in body && typeof body.actor === "string" && body.actor.trim()
+      ? body.actor.trim().slice(0, 80)
+      : process.env.NFC_ACTOR_NAME?.trim() || "NFC";
+
   if (
     typeof task !== "string" ||
     !["agua", "comida", "arenero"].includes(task)
@@ -55,7 +61,7 @@ export async function POST(request: Request) {
     "complete_care_task",
     {
       p_code: task,
-      p_actor: "Max",
+      p_actor: actor,
     }
   );
 
