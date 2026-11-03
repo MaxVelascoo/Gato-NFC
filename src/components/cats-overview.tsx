@@ -138,7 +138,11 @@ export default function CatsOverview({
               const goal = cat.daily_meals_goal;
               const progress = goal ? Math.min(100, Math.round(meals / goal * 100)) : null;
               return <div className="feeding-row" key={cat.id}>
-                <span className="feeding-cat-avatar">{cat.avatar_emoji || cat.name.slice(0, 1)}</span>
+                <span className="feeding-cat-avatar">
+                  {cat.photo_url
+                    ? <img src={cat.photo_url} alt={`Foto de ${cat.name}`} />
+                    : cat.avatar_emoji || cat.name.slice(0, 1).toLocaleUpperCase("es")}
+                </span>
                 <span className="feeding-cat-copy"><strong>{cat.name}</strong><small>{goal ? `${meals} de ${goal} comidas` : `${meals} ${meals === 1 ? "comida registrada" : "comidas registradas"}`}</small></span>
                 {progress !== null ? <><span className="feeding-progress"><i style={{ width: `${progress}%` }} /></span><strong className="feeding-percent">{progress}%</strong></> : <span className="feeding-no-goal">Objetivo sin configurar</span>}
               </div>;

@@ -400,7 +400,7 @@ export default function Home() {
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="#inicio" aria-label="MiauCare, inicio">
+        <a className="brand" href="#inicio" onClick={() => setActiveNav("Inicio")} aria-label="MiauCare, inicio">
           <Image className="brand-logo" src="/logo_grande.png" alt="MiauCare" width={2172} height={724} priority />
         </a>
 

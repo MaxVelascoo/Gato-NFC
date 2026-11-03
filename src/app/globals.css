@@ -240,7 +240,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid #69b99c; outline-offs
 .cats-data-empty { padding: 24px 12px; color: #7c8982; font-size: 12px; line-height: 1.55; }
 .feeding-list { display: flex; flex-direction: column; gap: 0; }
 .feeding-row { min-height: 57px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #edf0eb; }
-.feeding-cat-avatar { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 50%; background: #e8f1ea; color: #35654f; font-size: 16px; font-weight: 700; }
+.feeding-cat-avatar { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; overflow: hidden; border: 1px solid #e6e8e4; border-radius: 50%; background: #e8f1ea; color: #35654f; font-size: 16px; font-weight: 700; }
+.feeding-cat-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .feeding-cat-copy { display: flex; min-width: 115px; flex: 1; flex-direction: column; gap: 2px; }
 .feeding-cat-copy strong { font-size: 13px; }
 .feeding-cat-copy small { color: #78857e; font-size: 11px; }
