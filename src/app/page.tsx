@@ -145,7 +145,7 @@ function ageLabel(birthday: string | null, nowTimestamp: number | null) {
   const now = new Date(nowTimestamp);
   let months = (now.getFullYear() - born.getFullYear()) * 12 + now.getMonth() - born.getMonth();
   if (now.getDate() < born.getDate()) months--;
-  return months < 12 ? `${Math.max(0, months)} meses` : `${Math.floor(months / 12)} años`;
+  return months < 12 ? `${Math.max(0, months)}  ${Math.max(0, months) === 1 ? "mes" : "meses"}` : `${Math.floor(months / 12)} años`;
 }
 
 export default function Home() {
@@ -455,7 +455,10 @@ export default function Home() {
           <div className="breadcrumb">Hogar <span>/</span> <strong>{activeNav === "Inicio" ? "Resumen" : activeNav}</strong></div>
           <div className="mobile-brand-row">
             <a className="mobile-brand" href="#inicio" onClick={() => setActiveNav("Inicio")} aria-label="MiauCare, inicio"><Image className="brand-logo" src="/logo_grande.png" alt="MiauCare" width={2172} height={724} priority /></a>
-            <a className="mobile-bell" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={21} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
+            <div className="mobile-brand-actions">
+              <button className="mobile-refresh" onClick={() => void loadDashboard()} disabled={loading} aria-label="Actualizar datos" title="Actualizar datos"><Icon name="sync" size={19} /></button>
+              <a className="mobile-bell" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={21} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
+            </div>
           </div>
           <div className="topbar-actions">
             <span className="today">{now === null ? "" : dateLabel(new Date(now).toISOString())}</span>

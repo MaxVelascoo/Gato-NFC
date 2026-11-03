@@ -595,6 +595,9 @@ button:focus-visible, a:focus-visible { outline-color: #87958d; }
   .mobile-brand-row { display: flex; align-items: center; justify-content: space-between; min-height: 34px; }
   .mobile-brand { display: inline-flex; align-items: center; color: #202622; text-decoration: none; }
   .mobile-brand .brand-logo { width: 146px; max-width: 146px; }
+  .mobile-brand-actions { display: flex; align-items: center; gap: 8px; }
+  .mobile-refresh { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #e7e8e5; border-radius: 12px; background: #fbfbfa; color: #303832; cursor: pointer; }
+  .mobile-refresh:disabled { opacity: .55; cursor: wait; }
   .mobile-bell { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #e7e8e5; border-radius: 12px; background: #fbfbfa; color: #303832; }
   .mobile-bell .notification-count { top: 1px; right: 1px; }
   .page-heading { align-items: flex-start; margin: 9px 0 12px; }
