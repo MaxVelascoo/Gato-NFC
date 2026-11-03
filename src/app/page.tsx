@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
 import CatsOverview from "@/components/cats-overview";
+import CatPhotoCropper from "@/components/cat-photo-cropper";
 import type { CatCardData, CatCareReminder } from "@/components/cats-overview";
+import { cropCatPhoto, type PhotoCrop } from "@/lib/photo-crop";
 
 type IconName =
   | "home"
@@ -144,6 +146,10 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [householdOpen, setHouseholdOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Cat | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [photoCrop, setPhotoCrop] = useState<PhotoCrop>({ zoom: 1, x: 0, y: 0, aspectRatio: 16 / 9 });
+  const photoPreviewUrlRef = useRef<string | null>(null);
   const [mobileRecordTask, setMobileRecordTask] = useState<CareTask | null>(null);
   const [mobileRecordActor, setMobileRecordActor] = useState("");
   const [mobileRecordAmount, setMobileRecordAmount] = useState("");
@@ -152,6 +158,21 @@ export default function Home() {
   const [recordingTaskIds, setRecordingTaskIds] = useState<Set<string>>(new Set());
   const recordingTaskIdsRef = useRef(new Set<string>());
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const selectCatPhoto = (file: File | null) => {
+    if (photoPreviewUrlRef.current) URL.revokeObjectURL(photoPreviewUrlRef.current);
+    const previewUrl = file ? URL.createObjectURL(file) : null;
+    photoPreviewUrlRef.current = previewUrl;
+    setPhotoFile(file);
+    setPhotoPreviewUrl(previewUrl);
+    setPhotoCrop({ zoom: 1, x: 0, y: 0, aspectRatio: 16 / 9 });
+  };
+
+  const clearCatPhotoSelection = () => selectCatPhoto(null);
+
+  useEffect(() => () => {
+    if (photoPreviewUrlRef.current) URL.revokeObjectURL(photoPreviewUrlRef.current);
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -301,6 +322,7 @@ export default function Home() {
     const form = new FormData(event.currentTarget);
     try {
       if (entryMode === "cat") {
+        const croppedPhoto = photoFile ? await cropCatPhoto(photoFile, photoCrop) : null;
         const sterilizedValue = String(form.get("is_sterilized") || "");
         const catInput = {
           name: form.get("name"), weight_kg: form.get("weight_kg"), birthday: form.get("birthday") || null,
@@ -311,7 +333,7 @@ export default function Home() {
         const cat = editingCat
           ? await sendJson(`/api/cats?id=${encodeURIComponent(editingCat.id)}`, catInput, "PATCH")
           : await sendJson("/api/cats", catInput);
-        const photo = form.get("photo");
+        const photo = croppedPhoto ?? form.get("photo");
         if (photo instanceof File && photo.size > 0) {
           const photoForm = new FormData(); photoForm.append("cat_id", cat.id); photoForm.append("photo", photo);
           const upload = await fetch("/api/cats/photo", { method: "POST", body: photoForm });
@@ -341,6 +363,7 @@ export default function Home() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "No se pudo subir el documento.");
       }
+      clearCatPhotoSelection();
       setEditingCat(null);
       setEntryMode(null);
       await loadDashboard();
@@ -353,8 +376,9 @@ export default function Home() {
     }
   };
 
-  const openAddCat = () => { setEditingCat(null); setFormError(""); setEntryMode("cat"); };
-  const openEditCat = (cat: CatCardData) => { setEditingCat(cat); setFormError(""); setEntryMode("cat"); };
+  const openAddCat = () => { clearCatPhotoSelection(); setEditingCat(null); setFormError(""); setEntryMode("cat"); };
+  const openEditCat = (cat: CatCardData) => { clearCatPhotoSelection(); setEditingCat(cat); setFormError(""); setEntryMode("cat"); };
+  const closeEntryForm = () => { clearCatPhotoSelection(); setEditingCat(null); setEntryMode(null); setFormError(""); };
 
   const completeReminder = async (reminder: CatCareReminder) => {
     const response = await fetch(`/api/care-reminders?id=${encodeURIComponent(reminder.id)}`, { method: "PATCH" });
@@ -624,15 +648,15 @@ export default function Home() {
         <button className="register-button form-submit" onClick={() => { setHouseholdOpen(false); setFormError(""); setEntryMode("member"); }}><Icon name="plus" size={17} /> Añadir persona</button>
       </section></div>}
 
-      {entryMode && <div className="modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setEntryMode(null); }}><form className="entry-form" onSubmit={submitEntry}>
-        <button type="button" className="modal-close" onClick={() => setEntryMode(null)} aria-label="Cerrar">×</button>
+      {entryMode && <div className="modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) closeEntryForm(); }}><form className="entry-form" onSubmit={submitEntry}>
+        <button type="button" className="modal-close" onClick={closeEntryForm} aria-label="Cerrar">×</button>
         <h2>{entryMode === "cat" ? editingCat ? `Editar ficha de ${editingCat.name}` : "Añadir gato" : entryMode === "task" ? "Crear rutina" : entryMode === "inventory" ? "Añadir al inventario" : entryMode === "member" ? "Añadir persona al hogar" : entryMode === "reminder" ? "Añadir cuidado" : entryMode === "weight" ? "Registrar peso" : entryMode === "document" ? "Subir documento veterinario" : "Añadir al historial médico"}</h2>
         {entryMode === "cat" && <>
           <label>Nombre<input name="name" autoFocus maxLength={80} required defaultValue={editingCat?.name ?? ""} placeholder="Nombre del gato" /></label>
           <div className="form-row"><label>Sexo<select name="sex" defaultValue={editingCat?.sex ?? ""}><option value="">Sin especificar</option><option value="male">Macho</option><option value="female">Hembra</option><option value="unknown">No se conoce</option></select></label><label>Esterilización<select name="is_sterilized" defaultValue={editingCat?.is_sterilized == null ? "" : String(editingCat.is_sterilized)}><option value="">Sin especificar</option><option value="true">Sí</option><option value="false">No</option></select></label></div>
           <div className="form-row"><label>Peso (kg)<input name="weight_kg" type="number" min="0.1" max="100" step="0.1" defaultValue={editingCat?.weight_kg ?? ""} /></label><label>Fecha de nacimiento<input name="birthday" type="date" defaultValue={editingCat?.birthday ?? ""} /></label></div>
           <div className="form-row"><label>Comidas diarias objetivo<input name="daily_meals_goal" type="number" min="1" max="12" step="1" defaultValue={editingCat?.daily_meals_goal ?? ""} /></label><label>Próxima vacuna<input name="next_vaccine_on" type="date" defaultValue={editingCat?.next_vaccine_on ?? ""} /></label></div>
-          <label>Foto del gato<input name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/avif" />{editingCat?.photo_url && <small>Deja el campo vacío para conservar la foto actual.</small>}</label>
+          <CatPhotoCropper currentPhotoUrl={editingCat?.photo_url ?? null} previewUrl={photoPreviewUrl} selectedFileName={photoFile?.name ?? null} crop={photoCrop} onSelectPhoto={selectCatPhoto} onCropChange={setPhotoCrop} />
         </>}
         {entryMode === "task" && <><label>Nombre de la rutina<input name="name" autoFocus maxLength={100} required placeholder="Nombre de la rutina" /></label><div className="form-row"><label>Tipo<select name="kind" defaultValue="" required><option value="" disabled>Elige el tipo</option><option value="water">Agua</option><option value="food">Comida</option><option value="litter">Arenero</option><option value="other">Otro cuidado</option></select></label><label>Repetir cada (horas)<input name="interval_hours" type="number" min="1" max="8760" required /></label></div></>}
         {entryMode === "inventory" && <><label>Producto<input name="name" autoFocus maxLength={100} required placeholder="Nombre del producto" /></label><div className="form-row"><label>Cantidad<input name="quantity" type="number" min="0" step="0.1" required /></label><label>Unidad<input name="unit" maxLength={30} required placeholder="g, kg, bolsas…" /></label></div><label>Avisar cuando quede menos de<input name="low_stock_at" type="number" min="0" step="0.1" required /></label></>}
