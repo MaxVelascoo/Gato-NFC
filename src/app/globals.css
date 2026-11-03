@@ -667,8 +667,8 @@ button:focus-visible, a:focus-visible { outline-color: #87958d; }
   .mobile-care-shortcuts button { min-height: 46px; display: flex; align-items: center; gap: 9px; border: 1px solid #e6e8e4; border-radius: 10px; padding: 0 11px; background: #fff; color: #323a34; text-align: left; font: inherit; font-size: 12px; font-weight: 650; }
   .mobile-care-shortcuts button svg:last-child { margin-left: auto; color: #747b75; }
   .bottom-cards { display: none; }
-  .mobile-bottom-nav { position: fixed; z-index: 8; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); min-height: 59px; padding: 6px 6px max(7px, env(safe-area-inset-bottom)); border-top: 1px solid #e6e8e4; background: #fff; box-shadow: 0 -4px 16px #2026220a; }
-  .mobile-bottom-nav button { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-radius: 9px; background: transparent; color: #737a74; font: inherit; cursor: pointer; }
+  .mobile-bottom-nav { position: fixed; z-index: 8; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); min-height: 80px; padding: 10px 6px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid #e6e8e4; background: #fff; box-shadow: 0 -4px 16px #2026220a; }
+  .mobile-bottom-nav button { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: 9px; background: transparent; color: #737a74; font: inherit; cursor: pointer; }
   .mobile-bottom-nav button span { font-size: 9px; font-weight: 600; }
   .mobile-bottom-nav button.active { color: #25332a; }
   .mobile-bottom-nav button.active svg { stroke-width: 2.4; }
@@ -689,7 +689,7 @@ button:focus-visible, a:focus-visible { outline-color: #87958d; }
   .mobile-record-submit { min-height: 48px; width: 100%; justify-content: center; margin-top: 5px; font-size: 14px !important; }
   .mobile-record-submit:disabled { opacity: .6; }
   .entry-form .form-error { font-size: 12px !important; }
-  .toast { right: 12px; bottom: calc(72px + env(safe-area-inset-bottom)); left: 12px; justify-content: space-between; width: auto; max-width: none; font-size: 12px; }
+  .toast { right: 12px; bottom: calc(88px + env(safe-area-inset-bottom)); left: 12px; justify-content: space-between; width: auto; max-width: none; font-size: 12px; }
   .load-error { align-items: flex-start; font-size: 12px; }
   .load-error button { min-height: 40px; }
   .entry-form { max-height: calc(100dvh - 34px - env(safe-area-inset-top)); overflow-y: auto; }
