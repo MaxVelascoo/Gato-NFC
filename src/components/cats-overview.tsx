@@ -103,7 +103,6 @@ export default function CatsOverview({
                   {cat.weight_kg !== null && <span><Glyph name="weight" /> {Number(cat.weight_kg).toLocaleString("es-ES")} kg</span>}
                   {cat.is_sterilized !== null && <span><Glyph name="shield" /> {cat.is_sterilized ? "Esterilizado/a" : "Sin esterilizar"}</span>}
                 </div>
-                <button className="cat-full-button" onClick={() => onEditCat(cat)}>Editar ficha <Glyph name="arrow" /></button>
               </div>
             </div>
           </div>

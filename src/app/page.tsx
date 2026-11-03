@@ -239,7 +239,7 @@ export default function Home() {
     setRecordingTaskIds(new Set(recordingTaskIdsRef.current));
     try {
       await sendJson("/api/care", { code: task.code, actor: actorName.trim(), cat_id: catId, amount_grams: amountGrams });
-      setNotice(`${task.name}: cuidado guardado en Supabase`);
+      setNotice(`${task.name}: cuidado guardado`);
       if (closeMobileForm) setMobileRecordTask(null);
       await loadDashboard();
     } catch (error) {
@@ -367,7 +367,7 @@ export default function Home() {
       setEditingCat(null);
       setEntryMode(null);
       await loadDashboard();
-      setNotice("Guardado en Supabase");
+      setNotice("Guardado");
       window.setTimeout(() => setNotice(""), 2600);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "No se pudo guardar.");
@@ -477,7 +477,7 @@ export default function Home() {
         /> : <>
         <div className="sync-banner">
           <div className="pending-label"><span className="check-disc"><Icon name="check" size={18} /></span><strong>{now === null ? "Consultando tareas…" : pendingTasks.length ? `${pendingTasks.length} tareas pendientes` : "Todo al día"}</strong></div>
-          <div className="sync-label"><Icon name="sync" size={20} /><span>{loading ? "Sincronizando…" : loadError ? "Sin conexión" : "Datos guardados en Supabase"}</span></div>
+          <div className="sync-label"><Icon name="sync" size={20} /><span>{loading ? "Sincronizando…" : loadError ? "Sin conexión" : "Datos guardados"}</span></div>
         </div>
 
         {loadError && <div className="load-error" role="alert">{loadError}<button onClick={() => void loadDashboard()}>Reintentar</button></div>}
@@ -666,7 +666,7 @@ export default function Home() {
         {entryMode === "medical" && <><label>Gato<select name="cat_id" defaultValue={data?.cats[0]?.id ?? ""} required>{(data?.cats ?? []).map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Registro<input name="title" autoFocus maxLength={120} required placeholder="Ej. Revisión anual" /></label><div className="form-row"><label>Tipo<select name="record_type" defaultValue="visit"><option value="visit">Visita</option><option value="diagnosis">Diagnóstico</option><option value="treatment">Tratamiento</option><option value="vaccination">Vacunación</option><option value="other">Otro</option></select></label><label>Fecha<input name="recorded_on" type="date" /></label></div><label>Clínica<input name="clinic" maxLength={120} /></label><label>Notas<textarea name="notes" maxLength={1000} rows={3} /></label></>}
         {entryMode === "document" && <><label>Gato<select name="cat_id" defaultValue={data?.cats[0]?.id ?? ""} required>{(data?.cats ?? []).map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Archivo<input name="document" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required /></label><div className="form-row"><label>Tipo<select name="document_type" defaultValue="veterinary"><option value="veterinary">Veterinario</option><option value="vaccination">Vacunación</option><option value="lab">Analítica</option><option value="other">Otro</option></select></label><label>Fecha<input name="document_date" type="date" /></label></div></>}
         {formError && <p className="form-error">{formError}</p>}
-        <button className="register-button form-submit" disabled={saving}>{saving ? "Guardando…" : "Guardar en Supabase"}</button>
+        <button className="register-button form-submit" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </form></div>}
       {notice && <div className="toast" role="status">{notice}<button onClick={() => setNotice("")} aria-label="Cerrar">×</button></div>}
     </main>

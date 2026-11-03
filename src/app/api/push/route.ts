@@ -200,7 +200,7 @@ export async function POST(request: Request) {
             },
           },
           JSON.stringify({
-            title: "MiauCare",
+            title: "🐱 MiauCare",
             body: "¡Las notificaciones funcionan!",
             url: "/notificaciones",
           })
