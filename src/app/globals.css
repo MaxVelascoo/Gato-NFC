@@ -543,6 +543,7 @@ button:focus-visible, a:focus-visible { outline-color: #87958d; }
 .notifications-card input { width: 100%; height: 42px; border: 1px solid #e0e3df; border-radius: 8px; padding: 0 11px; background: #f9f9f8; color: #303832; font: inherit; }
 .notifications-card button { min-height: 40px; border: 0; border-radius: 8px; background: #303832; color: white; font: inherit; font-weight: 650; cursor: pointer; }
 .notifications-status { min-height: 18px; color: #636a64; font-size: 12px; }
+.notifications-home-link { align-self: center; color: #59615a; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (min-width: 1500px) {
   .workspace { padding-left: 25px; padding-right: 25px; }

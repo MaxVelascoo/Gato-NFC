@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Gato NFC",
     short_name: "GatoNFC",
     description: "Control de cuidados de nuestros gatos",
-    start_url: "/notificaciones",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     background_color: "#ffffff",

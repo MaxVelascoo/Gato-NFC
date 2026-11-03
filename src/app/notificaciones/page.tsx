@@ -82,6 +82,7 @@ export default function NotificacionesPage() {
       }
 
       setStatus("✅ Notificaciones activadas");
+      window.setTimeout(() => window.location.replace("/"), 1200);
     } catch (error) {
       setStatus(`Error: ${String(error)}`);
     }
@@ -106,6 +107,7 @@ export default function NotificacionesPage() {
         </label>
         <button onClick={activarNotificaciones}>Activar notificaciones</button>
         <p className="notifications-status" role="status">{status}</p>
+        <a className="notifications-home-link" href="/">Volver al panel</a>
       </section>
     </main>
   );

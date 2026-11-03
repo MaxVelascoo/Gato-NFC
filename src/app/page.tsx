@@ -357,7 +357,7 @@ export default function Home() {
           <div className="breadcrumb">Hogar <span>/</span> <strong>{activeNav === "Inicio" ? "Resumen" : activeNav}</strong></div>
           <div className="topbar-actions">
             <span className="today">{now === null ? "" : dateLabel(new Date(now).toISOString())}</span>
-            <button className="icon-button notification-button" aria-label={`${pendingTasks.length} tareas pendientes`} onClick={() => setNotice(pendingTasks.length ? `Pendiente: ${pendingTasks.map((task) => task.name).join(", ")}` : "No hay cuidados pendientes")}><Icon name="bell" size={23} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</button>
+            <a className="icon-button notification-button" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={23} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
             <button className="profile-button" aria-label={members[0] ? `Personas del hogar: ${members.map((member) => member.name).join(", ")}` : "Añadir personas al hogar"} onClick={() => setHouseholdOpen(true)}>{members[0] ? <span className="profile-avatar">{members[0].name.slice(0, 1).toLocaleUpperCase("es")}</span> : <span className="profile-avatar"><Icon name="users" size={19} /></span>}</button>
           </div>
         </header>
