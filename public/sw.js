@@ -12,7 +12,7 @@ self.addEventListener("push", (event) => {
       data.title || "Gato NFC",
       {
         body: data.body || "Tienes una notificación",
-        icon: "/favicon.ico",
+        icon: "/icons/miaucare-192.png",
         data: {
           url: data.url || "/",
         },
