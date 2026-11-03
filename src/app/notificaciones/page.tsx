@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 function base64ToArrayBuffer(value: string): ArrayBuffer {
   const base64 = value
@@ -107,7 +108,7 @@ export default function NotificacionesPage() {
         </label>
         <button onClick={activarNotificaciones}>Activar notificaciones</button>
         <p className="notifications-status" role="status">{status}</p>
-        <a className="notifications-home-link" href="/">Volver al panel</a>
+        <Link className="notifications-home-link" href="/">Volver al panel</Link>
       </section>
     </main>
   );

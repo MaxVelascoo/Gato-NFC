@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import CatsOverview from "@/components/cats-overview";
 import type { CatCardData, CatCareReminder } from "@/components/cats-overview";
 
@@ -13,6 +13,7 @@ type IconName =
   | "box"
   | "nfc"
   | "settings"
+  | "file"
   | "water"
   | "food"
   | "litter"
@@ -48,6 +49,7 @@ function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
     box: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 8 9 5 9-5M3 8v9l9 5 9-5V8M12 13v9" /></>,
     nfc: <><path d="M5 9a5 5 0 0 0 0 6M9 6a9 9 0 0 0 0 12M13 3a13 13 0 0 0 0 18" /><circle cx="18" cy="12" r="2" /></>,
     settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z" transform="translate(-1 -2)" /></>,
+    file: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6M8 13h8M8 17h8" /></>,
     water: <><path d="M12 3s-7 7.2-7 12a7 7 0 0 0 14 0c0-4.8-7-12-7-12Z" /><path d="M9 16a3 3 0 0 0 3 3" /></>,
     food: <><path d="M3 11c0-4 4-7 9-7s9 3 9 7v2c0 2-1.5 3-3 3H6c-1.5 0-3-1-3-3v-2Z" /><path d="M4 11h16M7 7l1 2m8-2-1 2" /></>,
     litter: <><path d="m14 4 6 6M13 5 4 14l-1 7 7-1 9-9" /><path d="m8 18-3-3" /></>,
@@ -141,6 +143,14 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [householdOpen, setHouseholdOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Cat | null>(null);
+  const [mobileRecordTask, setMobileRecordTask] = useState<CareTask | null>(null);
+  const [mobileRecordActor, setMobileRecordActor] = useState("");
+  const [mobileRecordAmount, setMobileRecordAmount] = useState("");
+  const [mobileRecordCatId, setMobileRecordCatId] = useState("");
+  const [mobileRecordError, setMobileRecordError] = useState("");
+  const [recordingTaskIds, setRecordingTaskIds] = useState<Set<string>>(new Set());
+  const recordingTaskIdsRef = useRef(new Set<string>());
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -163,7 +173,10 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => { void loadDashboard(); }, [loadDashboard]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadDashboard(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadDashboard]);
   useEffect(() => {
     const updateClock = () => setNow(Date.now());
     updateClock();
@@ -176,9 +189,20 @@ export default function Home() {
   const actor = data?.events[0]?.actor || "";
   const members = data?.members ?? [];
   const defaultActor = actor || members[0]?.name || "";
-  const pendingTasks = now === null ? [] : (data?.tasks ?? []).filter((task) => !task.last_completed_at || !task.next_due_at || new Date(task.next_due_at).getTime() <= now);
+  const pendingTasks = useMemo(() => now === null ? [] : (data?.tasks ?? []).filter((task) => !task.last_completed_at || !task.next_due_at || new Date(task.next_due_at).getTime() <= now), [data?.tasks, now]);
   const weekEvents = now === null ? [] : (data?.events ?? []).filter((event) => now - new Date(event.occurred_at).getTime() <= 7 * 86_400_000);
   const overdueTasks = now === null ? 0 : (data?.tasks ?? []).filter((task) => task.next_due_at && new Date(task.next_due_at).getTime() < now).length;
+  const onTimeTasks = now === null ? 0 : (data?.tasks ?? []).filter((task) => task.last_completed_at && task.next_due_at && new Date(task.next_due_at).getTime() > now).length;
+  const pendingTaskIds = useMemo(() => new Set(pendingTasks.map((task) => task.id)), [pendingTasks]);
+  const urgentTasks = useMemo(() => [...pendingTasks].sort((a, b) => {
+    if (!a.next_due_at) return !b.next_due_at ? 0 : -1;
+    if (!b.next_due_at) return 1;
+    return new Date(a.next_due_at).getTime() - new Date(b.next_due_at).getTime();
+  }), [pendingTasks]);
+  const upcomingTasks = useMemo(() => (data?.tasks ?? [])
+    .filter((task) => !pendingTaskIds.has(task.id))
+    .sort((a, b) => (a.next_due_at ?? "").localeCompare(b.next_due_at ?? ""))
+    .slice(0, 4), [data?.tasks, pendingTaskIds]);
 
   const sendJson = async (url: string, body: Record<string, unknown>, method = "POST") => {
     const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -187,7 +211,28 @@ export default function Home() {
     return result;
   };
 
+  const submitCareTask = async (task: CareTask, actorName: string, catId: string | null, amountGrams: number | null, closeMobileForm = false) => {
+    if (recordingTaskIdsRef.current.has(task.id)) return;
+    recordingTaskIdsRef.current.add(task.id);
+    setRecordingTaskIds(new Set(recordingTaskIdsRef.current));
+    try {
+      await sendJson("/api/care", { code: task.code, actor: actorName.trim(), cat_id: catId, amount_grams: amountGrams });
+      setNotice(`${task.name}: cuidado guardado en Supabase`);
+      if (closeMobileForm) setMobileRecordTask(null);
+      await loadDashboard();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo registrar el cuidado";
+      if (closeMobileForm) setMobileRecordError(message);
+      setNotice(message);
+    } finally {
+      recordingTaskIdsRef.current.delete(task.id);
+      setRecordingTaskIds(new Set(recordingTaskIdsRef.current));
+      window.setTimeout(() => setNotice(""), 3200);
+    }
+  };
+
   const finishTask = async (task: CareTask) => {
+    if (recordingTaskIdsRef.current.has(task.id)) return;
     const actorName = window.prompt("¿Quién ha realizado este cuidado?", defaultActor);
     if (!actorName?.trim()) return;
     let catId: string | null = null;
@@ -213,14 +258,27 @@ export default function Home() {
         catId = selectedCat?.id ?? null;
       }
     }
-    try {
-      await sendJson("/api/care", { code: task.code, actor: actorName.trim(), cat_id: catId, amount_grams: amountGrams });
-      setNotice(`${task.name}: cuidado guardado en Supabase`);
-      await loadDashboard();
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "No se pudo registrar el cuidado");
+    await submitCareTask(task, actorName, catId, amountGrams);
+  };
+
+  const openMobileTaskRecord = (task: CareTask) => {
+    setMobileRecordTask(task);
+    setMobileRecordActor(defaultActor);
+    setMobileRecordAmount("");
+    setMobileRecordCatId("");
+    setMobileRecordError("");
+  };
+
+  const submitMobileTaskRecord = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!mobileRecordTask || !mobileRecordActor.trim()) return;
+    const amount = mobileRecordAmount.trim() ? Number(mobileRecordAmount) : null;
+    if (amount !== null && (!Number.isInteger(amount) || amount <= 0)) {
+      setMobileRecordError("La cantidad debe ser un número de gramos mayor que cero.");
+      return;
     }
-    window.setTimeout(() => setNotice(""), 3200);
+    const catId = mobileRecordTask.kind === "food" ? mobileRecordCatId || null : null;
+    void submitCareTask(mobileRecordTask, mobileRecordActor, catId, mobileRecordTask.kind === "food" ? amount : null, true);
   };
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -355,6 +413,10 @@ export default function Home() {
       <section className="workspace" id="inicio">
         <header className="topbar">
           <div className="breadcrumb">Hogar <span>/</span> <strong>{activeNav === "Inicio" ? "Resumen" : activeNav}</strong></div>
+          <div className="mobile-brand-row">
+            <a className="mobile-brand" href="#inicio" onClick={() => setActiveNav("Inicio")}><span className="brand-icon"><Icon name="cats" size={24} /></span><span>MiauCare</span></a>
+            <a className="mobile-bell" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={21} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
+          </div>
           <div className="topbar-actions">
             <span className="today">{now === null ? "" : dateLabel(new Date(now).toISOString())}</span>
             <a className="icon-button notification-button" href="/notificaciones" aria-label="Configurar notificaciones"><Icon name="bell" size={23} />{pendingTasks.length > 0 && <span className="notification-count">{pendingTasks.length}</span>}</a>
@@ -363,7 +425,7 @@ export default function Home() {
         </header>
 
         <div className="page-heading">
-          <div><h1>{activeNav === "Mis gatos" ? "Mis gatos" : "Estado del hogar"}</h1><p>{activeNav === "Mis gatos" ? "Toda su información y cuidados en un solo lugar" : "Resumen de rutinas, actividad e inventario guardados"}</p></div>
+          <div>{activeNav === "Inicio" && now !== null && <span className="mobile-date">{dateLabel(new Date(now).toISOString())}</span>}<h1>{activeNav === "Mis gatos" ? "Mis gatos" : "Estado del hogar"}</h1><p className="desktop-page-description">{activeNav === "Mis gatos" ? "Toda su información y cuidados en un solo lugar" : "Resumen de rutinas, actividad e inventario guardados"}</p>{activeNav === "Inicio" && <p className="mobile-page-description">Así están los cuidados de hoy</p>}</div>
           {activeNav === "Mis gatos"
             ? <button className="cats-add-button" onClick={openAddCat}><Icon name="plus" size={19} /> Añadir gato</button>
             : <button className="date-select" onClick={() => void loadDashboard()}><Icon name="sync" size={18} /> Actualizar</button>}
@@ -390,11 +452,37 @@ export default function Home() {
           onCompleteReminder={(reminder) => void completeReminder(reminder)}
         /> : <>
         <div className="sync-banner">
-          <div className="pending-label"><span className="check-disc"><Icon name="check" size={18} /></span><strong>{now === null ? "—" : pendingTasks.length} tareas pendientes</strong></div>
+          <div className="pending-label"><span className="check-disc"><Icon name="check" size={18} /></span><strong>{now === null ? "Consultando tareas…" : pendingTasks.length ? `${pendingTasks.length} tareas pendientes` : "Todo al día"}</strong></div>
           <div className="sync-label"><Icon name="sync" size={20} /><span>{loading ? "Sincronizando…" : loadError ? "Sin conexión" : "Datos guardados en Supabase"}</span></div>
         </div>
 
         {loadError && <div className="load-error" role="alert">{loadError}<button onClick={() => void loadDashboard()}>Reintentar</button></div>}
+
+        <section className="mobile-task-priority" aria-labelledby="mobile-pending-heading">
+          <div className="mobile-section-heading"><h2 id="mobile-pending-heading">{pendingTasks.length ? "Pendiente ahora" : "Todo al día"}</h2>{pendingTasks.length > 0 && <span className="mobile-count-pill">{pendingTasks.length}</span>}</div>
+          {loadError ? <p className="mobile-empty-note">No se pudieron cargar las tareas. Usa Reintentar para sincronizar.</p> : loading && !data ? <p className="mobile-empty-note">Cargando tareas del hogar…</p> : urgentTasks.length ? urgentTasks.map((task) => {
+            const presentation = kindPresentation[task.kind];
+            const lastText = task.last_completed_at
+              ? `Último registro: ${task.last_completed_by || "Hogar"} · ${elapsedLabel(task.last_completed_at, now)}`
+              : `Sin registros · cada ${task.interval_hours} h`;
+            const dueText = task.next_due_at ? dueLabel(task.next_due_at, now) : `Cada ${task.interval_hours} h`;
+            const isRecording = recordingTaskIds.has(task.id);
+            return <article className="mobile-pending-card" key={task.id}>
+              <div className="mobile-pending-top"><span className={`icon-tile ${presentation.color}`}><Icon name={presentation.icon} size={22} /></span><div className="mobile-pending-title"><strong>{task.name}</strong><span className="mobile-status-pill overdue-pill">{dueText.startsWith("Retrasada") ? "Retrasada" : "Pendiente"}</span></div></div>
+              <p>{lastText}</p>
+              <button className="mobile-register-button" disabled={isRecording || loading} onClick={() => openMobileTaskRecord(task)}><Icon name={isRecording ? "sync" : "check"} size={19} />{isRecording ? "Guardando…" : "Registrar"}</button>
+            </article>;
+          }) : !loading && !loadError ? <div className="mobile-clear-card"><span className="check-disc"><Icon name="check" size={17} /></span><p>No hay cuidados pendientes ahora.</p></div> : null}
+          {!loading && !loadError && !(data?.tasks.length) && <button className="mobile-create-task" onClick={() => { setFormError(""); setEntryMode("task"); }}><Icon name="plus" size={18} /> Crear primera rutina</button>}
+        </section>
+
+        <section className="mobile-upcoming-section" id="mobile-upcoming" aria-labelledby="mobile-upcoming-heading">
+          <div className="mobile-section-heading"><h2 id="mobile-upcoming-heading">Lo siguiente</h2></div>
+          {upcomingTasks.length > 0 ? <div className="mobile-upcoming-list">{upcomingTasks.map((task) => {
+            const presentation = kindPresentation[task.kind];
+            return <div className="mobile-upcoming-row" key={task.id}><span className={`icon-tile small ${presentation.color}`}><Icon name={presentation.icon} size={19} /></span><div><strong>{task.name}</strong><span>Último: {task.last_completed_by || "Hogar"} · {elapsedLabel(task.last_completed_at, now)}</span></div><span className="mobile-upcoming-due">{dueLabel(task.next_due_at, now)}</span></div>;
+          })}</div> : <p className="mobile-upcoming-empty">{data?.tasks.length ? "No hay otras rutinas próximas." : "Cuando añadas una rutina, aparecerá aquí."}</p>}
+        </section>
 
         <section className="status-grid" aria-label="Estado de cuidados">
           {(data?.tasks ?? []).map((task) => {
@@ -421,7 +509,7 @@ export default function Home() {
                   <span className={`icon-tile small ${presentation.color}`}><Icon name={presentation.icon} size={22} /></span>
                   <div className="task-copy"><strong>{task.name}</strong><span>{task.last_completed_at ? `Última vez · ${task.last_completed_by || "Hogar"}` : `Sin registros · cada ${task.interval_hours} h`}</span></div>
                   <span className={`task-time ${presentation.color}`}>{dueText}</span>
-                  <button className="register-button" onClick={() => void finishTask(task)}><Icon name="check" size={17} /> Registrar</button>
+                  <button className="register-button" disabled={recordingTaskIds.has(task.id)} onClick={() => void finishTask(task)}><Icon name={recordingTaskIds.has(task.id) ? "sync" : "check"} size={17} /> {recordingTaskIds.has(task.id) ? "Guardando…" : "Registrar"}</button>
                 </div>;
               })}
               {!loading && !loadError && !(data?.tasks.length) && <div className="empty-row">Crea una rutina de agua, comida o arenero para que aparezca aquí.</div>}
@@ -430,7 +518,7 @@ export default function Home() {
 
           <section className="panel cats-panel" id="cats">
             <div className="panel-heading"><h2><Icon name="cats" size={24} /> Mis gatos</h2><button className="text-link" onClick={openAddCat}>Añadir gato <Icon name="plus" size={17} /></button></div>
-            {(data?.cats ?? []).slice(0, 3).map((cat) => <div className="cat-row" key={cat.id}><span className="cat-portrait">{cat.photo_url ? <img src={cat.photo_url} alt={`Foto de ${cat.name}`} /> : cat.avatar_emoji}</span><span className="cat-info"><strong>{cat.name}</strong><span>{[ageLabel(cat.birthday, now), cat.weight_kg ? `${Number(cat.weight_kg).toLocaleString("es-ES")} kg` : null].filter(Boolean).join(" · ") || "Añade edad y peso desde su ficha"}</span></span><span className="cat-online" /></div>)}
+            {(data?.cats ?? []).slice(0, 3).map((cat) => <button className="cat-row" key={cat.id} onClick={() => setActiveNav("Mis gatos")} aria-label={`Abrir ficha de ${cat.name}`}><span className="cat-portrait">{cat.photo_url ? <img src={cat.photo_url} alt={`Foto de ${cat.name}`} /> : cat.avatar_emoji}</span><span className="cat-info"><strong>{cat.name}</strong><span>{[ageLabel(cat.birthday, now), cat.weight_kg ? `${Number(cat.weight_kg).toLocaleString("es-ES")} kg` : null].filter(Boolean).join(" · ") || "Añade edad y peso desde su ficha"}</span></span><span className="cat-online" /></button>)}
             {!loading && !loadError && !(data?.cats.length) && <div className="cats-empty"><p>Aún no has añadido gatos.</p><button className="register-button" onClick={openAddCat}><Icon name="plus" size={16} /> Añadir el primero</button></div>}
             {(() => {
               const upcoming = (data?.cats ?? []).filter((cat) => cat.next_vaccine_on).sort((a, b) => (a.next_vaccine_on ?? "").localeCompare(b.next_vaccine_on ?? ""))[0];
@@ -460,6 +548,11 @@ export default function Home() {
               <div className="metric blue"><Icon name="list" size={24} /><strong>{weekEvents.length}<small>registros / 7 días</small></strong></div>
               <div className="metric coral"><Icon name="warning" size={24} /><strong>{overdueTasks}<small>pendientes</small></strong></div>
             </div>
+            <div className="metrics-row mobile-metrics">
+              <div className="metric"><Icon name="list" size={20} /><strong>{weekEvents.length}<small>cuidados / 7 d</small></strong></div>
+              <div className="metric"><Icon name="check" size={20} /><strong>{onTimeTasks}<small>en plazo</small></strong></div>
+              <div className="metric"><Icon name="warning" size={20} /><strong>{overdueTasks}<small>retrasadas</small></strong></div>
+            </div>
             <div className="distribution-label">Cuidados registrados por persona</div>
             {(() => {
               const counts = weekEvents.reduce<Record<string, number>>((result, event) => { result[event.actor] = (result[event.actor] ?? 0) + 1; return result; }, {});
@@ -471,6 +564,12 @@ export default function Home() {
           </section>
         </div>
 
+        <div className="mobile-care-shortcuts" aria-label="Accesos de salud e inventario">
+          <button onClick={() => { setActiveNav("Mis gatos"); window.setTimeout(() => document.getElementById("cats-care-reminders")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}><Icon name="vaccine" size={19} /><span>Próximas vacunas</span><Icon name="arrow" size={16} /></button>
+          <button onClick={() => { setActiveNav("Inventario"); setEntryMode("inventory"); }}><Icon name="box" size={19} /><span>Inventario</span><Icon name="arrow" size={16} /></button>
+          <button onClick={() => { setActiveNav("Mis gatos"); window.setTimeout(() => document.getElementById("medical-history")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}><Icon name="file" size={19} /><span>Historial médico</span><Icon name="arrow" size={16} /></button>
+        </div>
+
         <div className="bottom-cards">
           <div className="bottom-card static-card"><span className="icon-tile mint"><Icon name="calendar" size={23} /></span><span><strong>Próxima vacuna</strong><small>{(data?.cats ?? []).find((cat) => cat.next_vaccine_on)?.next_vaccine_on ? `${(data?.cats ?? []).find((cat) => cat.next_vaccine_on)?.name} · ${new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(new Date(`${(data?.cats ?? []).find((cat) => cat.next_vaccine_on)?.next_vaccine_on}T12:00:00`))}` : "Añade una fecha en la ficha de un gato"}</small></span></div>
           <button className="bottom-card" id="inventory" onClick={() => setEntryMode("inventory")}><span className="icon-tile mint"><Icon name="box" size={23} /></span><span><strong>Inventario</strong><small>{data?.inventory.length ? `${data.inventory[0].name}: ${data.inventory[0].quantity} ${data.inventory[0].unit}` : "Añade el pienso y otros productos"}</small></span><Icon name="plus" size={20} /></button>
@@ -478,6 +577,40 @@ export default function Home() {
         </div>
         </>}
       </section>
+
+      <nav className="mobile-bottom-nav" aria-label="Navegación inferior">
+        <button className={activeNav === "Inicio" ? "active" : ""} onClick={() => { setActiveNav("Inicio"); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Icon name="home" size={20} /><span>Inicio</span></button>
+        <button className={activeNav === "Mis gatos" ? "active" : ""} onClick={() => setActiveNav("Mis gatos")}><Icon name="cats" size={20} /><span>Gatos</span></button>
+        <button className={activeNav === "Calendario" ? "active" : ""} onClick={() => { setActiveNav("Calendario"); window.setTimeout(() => document.getElementById("mobile-upcoming")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}><Icon name="calendar" size={20} /><span>Calendario</span></button>
+        <button className={activeNav === "Historial" ? "active" : ""} onClick={() => { setActiveNav("Historial"); window.setTimeout(() => document.getElementById("activity")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}><Icon name="clock" size={20} /><span>Historial</span></button>
+        <button className={moreOpen ? "active" : ""} aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)}><Icon name="list" size={20} /><span>Más</span></button>
+      </nav>
+
+      {moreOpen && <div className="mobile-more-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setMoreOpen(false); }}>
+        <section className="mobile-more-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-more-title">
+          <div className="mobile-more-handle" />
+          <div className="mobile-more-heading"><h2 id="mobile-more-title">Más</h2><button onClick={() => setMoreOpen(false)} aria-label="Cerrar menú">×</button></div>
+          <button className="mobile-more-item" onClick={() => { setMoreOpen(false); setActiveNav("Estadísticas"); window.setTimeout(() => document.getElementById("stats")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}><Icon name="chart" size={19} />Estadísticas<span>›</span></button>
+          <button className="mobile-more-item" onClick={() => { setMoreOpen(false); setActiveNav("Inventario"); setEntryMode("inventory"); }}><Icon name="box" size={19} />Inventario<span>›</span></button>
+          <button className="mobile-more-item" onClick={() => { setMoreOpen(false); setNotice("Las etiquetas NFC registran agua, comida o arenero al acercar el móvil al lector."); window.setTimeout(() => setNotice(""), 4000); }}><Icon name="nfc" size={19} />Etiquetas NFC<span>›</span></button>
+          <button className="mobile-more-item" onClick={() => { setMoreOpen(false); setHouseholdOpen(true); }}><Icon name="settings" size={19} />Configuración del hogar<span>›</span></button>
+          <a className="mobile-more-item" href="/notificaciones" onClick={() => setMoreOpen(false)}><Icon name="bell" size={19} />Notificaciones<span>›</span></a>
+        </section>
+      </div>}
+
+      {mobileRecordTask && <div className="modal-overlay mobile-record-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !recordingTaskIds.has(mobileRecordTask.id)) setMobileRecordTask(null); }}><form className="entry-form mobile-record-form" onSubmit={submitMobileTaskRecord}>
+        <button type="button" className="modal-close" onClick={() => setMobileRecordTask(null)} aria-label="Cerrar" disabled={recordingTaskIds.has(mobileRecordTask.id)}>×</button>
+        <span className={`icon-tile ${kindPresentation[mobileRecordTask.kind].color}`}><Icon name={kindPresentation[mobileRecordTask.kind].icon} size={22} /></span>
+        <h2>Registrar {mobileRecordTask.name.toLocaleLowerCase("es")}</h2>
+        <p>El registro se guardará en el historial del hogar.</p>
+        <label>Quién lo ha hecho<input value={mobileRecordActor} onChange={(event) => setMobileRecordActor(event.target.value)} maxLength={80} required autoFocus /></label>
+        {mobileRecordTask.kind === "food" && <>
+          <label>Cantidad (gramos, opcional)<input type="number" min="1" step="1" inputMode="numeric" value={mobileRecordAmount} onChange={(event) => setMobileRecordAmount(event.target.value)} placeholder="Ej. 80" /></label>
+          {data?.cats.length ? <label>Gato<select value={mobileRecordCatId} onChange={(event) => setMobileRecordCatId(event.target.value)}><option value="">Todos los gatos</option>{data.cats.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label> : null}
+        </>}
+        {mobileRecordError && <p className="form-error" role="alert">{mobileRecordError}</p>}
+        <button className="register-button mobile-record-submit" disabled={recordingTaskIds.has(mobileRecordTask.id) || !mobileRecordActor.trim()}><Icon name={recordingTaskIds.has(mobileRecordTask.id) ? "sync" : "check"} size={18} />{recordingTaskIds.has(mobileRecordTask.id) ? "Guardando…" : "Guardar registro"}</button>
+      </form></div>}
 
       {needsLogin && <div className="modal-overlay"><form className="entry-form login-form" onSubmit={submitLogin}><span className="brand-icon"><Icon name="cats" size={34} /></span><h2>Accede a MiauCare</h2><p>Introduce la contraseña de tu hogar para abrir el panel.</p><label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>{formError && <p className="form-error">{formError}</p>}<button className="register-button form-submit">Entrar</button></form></div>}
 

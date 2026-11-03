@@ -113,7 +113,7 @@ export default function CatsOverview({
     </section>
 
       <div className="cats-panels-grid">
-        <section className="panel cats-data-panel">
+        <section className="panel cats-data-panel" id="cats-care-reminders">
           <div className="panel-heading"><h2><Glyph name="calendar" /> Próximos cuidados</h2><button className="text-link" onClick={onAddReminder} disabled={cats.length === 0}>Añadir cuidado <Glyph name="plus" /></button></div>
           <div className="care-reminder-list">
             {upcoming.slice(0, 5).map((reminder) => {
@@ -150,7 +150,7 @@ export default function CatsOverview({
       </div>
 
       <div className="cats-lower-grid">
-        <section className="panel cats-data-panel">
+        <section className="panel cats-data-panel" id="medical-history">
           <div className="panel-heading"><h2><Glyph name="file" /> Historial médico</h2><button className="text-link" onClick={onAddMedicalRecord} disabled={cats.length === 0}>Añadir registro <Glyph name="plus" /></button></div>
           <div className="simple-record-list">
             {medicalRecords.slice(0, 4).map((record) => <div className="simple-record-row" key={record.id}><span><strong>{record.title}</strong><small>{catsById.get(record.cat_id)?.name}{record.clinic ? ` · ${record.clinic}` : ""}</small></span><time>{dateText(record.recorded_on)}</time></div>)}
