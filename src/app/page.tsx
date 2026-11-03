@@ -31,6 +31,10 @@ type IconName =
   | "users";
 
 function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
+  if (name === "cats") {
+    return <Image className="miaucare-cat-icon" src="/logo.png" width={size} height={size} alt="" />;
+  }
+
   const common = {
     width: size,
     height: size,

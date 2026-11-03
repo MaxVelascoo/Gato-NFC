@@ -28,6 +28,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #69b99c; outline-offs
 .brand { display: flex; align-items: center; gap: 10px; color: #143d34; text-decoration: none; font-size: 25px; font-weight: 750; letter-spacing: -.8px; padding: 0 12px 36px; }
 .brand-logo { display: block; width: 100%; max-width: 194px; height: auto; object-fit: contain; }
 .brand-icon { display: grid; place-items: center; color: #10382f; }
+.miaucare-cat-icon { display: block; flex: 0 0 auto; object-fit: contain; }
 .main-nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-link { height: 46px; border: 0; background: transparent; padding: 0 15px; border-radius: 12px; display: flex; align-items: center; gap: 16px; text-align: left; text-decoration: none; color: #152c28; font-size: 15px; cursor: pointer; transition: background .16s ease, transform .16s ease; }
 .nav-link:hover { background: #f0f5f1; }
