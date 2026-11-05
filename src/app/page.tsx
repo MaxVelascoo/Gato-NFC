@@ -85,7 +85,7 @@ const navigation: { label: string; icon: IconName; target: string }[] = [
 
 type Cat = { id: string; name: string; weight_kg: number | null; birthday: string | null; next_vaccine_on: string | null; avatar_emoji: string; sex: "male" | "female" | "unknown" | null; is_sterilized: boolean | null; daily_meals_goal: number | null; photo_url: string | null };
 type HouseholdMember = { id: string; name: string; role: string; created_at: string };
-type CareTask = { id: string; code: string; name: string; kind: "water" | "food" | "litter" | "other"; interval_hours: number; last_completed_at: string | null; last_completed_by: string | null; next_due_at: string | null };
+type CareTask = { id: string; code: string; name: string; kind: "water" | "food" | "litter" | "other"; interval_hours: number; last_completed_at: string | null; last_completed_by: string | null; next_due_at: string | null; created_at: string };
 type CareEvent = { id: string; task_id: string; actor: string; occurred_at: string; cat_id: string | null; amount_grams: number | null; note: string | null };
 type InventoryItem = { id: string; name: string; quantity: number; unit: string; low_stock_at: number };
 type WeightLog = { id: string; cat_id: string; weight_kg: number; measured_at: string; note: string | null };
@@ -269,6 +269,12 @@ export default function Home() {
   const pendingTasks = useMemo(() => now === null ? [] : (data?.tasks ?? []).filter((task) => !task.last_completed_at || !task.next_due_at || new Date(task.next_due_at).getTime() <= now), [data?.tasks, now]);
   const weekEvents = now === null ? [] : (data?.events ?? []).filter((event) => now - new Date(event.occurred_at).getTime() <= 7 * 86_400_000);
   const overdueTasks = now === null ? 0 : (data?.tasks ?? []).filter((task) => task.next_due_at && new Date(task.next_due_at).getTime() < now).length;
+  const overdueStatusTasks = useMemo(() => now === null ? [] : (data?.tasks ?? []).filter((task) => {
+    const dueAt = task.next_due_at
+      ? new Date(task.next_due_at).getTime()
+      : new Date(task.last_completed_at ?? task.created_at).getTime() + task.interval_hours * 3_600_000;
+    return Number.isFinite(dueAt) && dueAt <= now;
+  }), [data?.tasks, now]);
   const onTimeTasks = now === null ? 0 : (data?.tasks ?? []).filter((task) => task.last_completed_at && task.next_due_at && new Date(task.next_due_at).getTime() > now).length;
   const pendingTaskIds = useMemo(() => new Set(pendingTasks.map((task) => task.id)), [pendingTasks]);
   const urgentTasks = useMemo(() => [...pendingTasks].sort((a, b) => {
@@ -568,18 +574,17 @@ export default function Home() {
           })}</div> : <p className="mobile-upcoming-empty">{data?.tasks.length ? "No hay otras rutinas próximas." : "Cuando añadas una rutina, aparecerá aquí."}</p>}
         </section>
 
-        <section className="status-grid" aria-label="Estado de cuidados">
-          {(data?.tasks ?? []).map((task) => {
+        {overdueStatusTasks.length > 0 && <section className="status-grid" aria-label="Cuidados pendientes ahora">
+          {overdueStatusTasks.map((task) => {
             const presentation = kindPresentation[task.kind];
-            const overdue = now !== null && Boolean(!task.last_completed_at || !task.next_due_at || new Date(task.next_due_at).getTime() <= now);
+            const dueAt = task.next_due_at ?? new Date(new Date(task.last_completed_at ?? task.created_at).getTime() + task.interval_hours * 3_600_000).toISOString();
             return <article className="status-card" key={task.id}>
-              <div className="status-card-top"><span className={`icon-tile ${presentation.color}`}><Icon name={presentation.icon} size={27} /></span><strong>{task.name}</strong><span className={`badge ${overdue ? "amber-badge" : "green-badge"}`}>{overdue ? "Pendiente" : "Al día"}</span></div>
-              <div className={`status-main ${overdue ? "overdue" : ""}`}><strong>{elapsedLabel(task.last_completed_at, now)}</strong><span>{task.last_completed_by || "Aún sin registrar"}{task.last_completed_at ? ` · ${new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(task.last_completed_at))}` : ""}</span></div>
-              <div className={`next-action ${presentation.color}-tint`}><Icon name="calendar" size={19} /> {task.next_due_at ? `Próxima ${new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(task.next_due_at))}` : `Cada ${task.interval_hours} h`}</div>
+              <div className="status-card-top"><span className={`icon-tile ${presentation.color}`}><Icon name={presentation.icon} size={27} /></span><strong>{task.name}</strong><span className="badge red-badge">Pendiente</span></div>
+              <div className="status-main overdue"><strong>{elapsedLabel(task.last_completed_at, now)}</strong><span>{task.last_completed_by || "Aún sin registrar"}{task.last_completed_at ? ` · ${new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(task.last_completed_at))}` : ""}</span></div>
+              <div className={`next-action ${presentation.color}-tint`}><Icon name="calendar" size={19} /> {dueLabel(dueAt, now)}</div>
             </article>;
           })}
-          {!loading && !loadError && !(data?.tasks.length) && <div className="empty-panel">Aún no hay rutinas configuradas. Añade una tarea para empezar.</div>}
-        </section>
+        </section>}
 
         <div className="primary-grid">
           <section className="panel tasks-panel" id="tasks">

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const supabase = getSupabaseAdmin();
   const [cats, tasks, events, inventory, members, weightLogs, reminders, documents, medicalRecords] = await Promise.all([
     supabase.from("cats").select("id,name,weight_kg,birthday,next_vaccine_on,avatar_emoji,sex,is_sterilized,daily_meals_goal,photo_url,photo_path,created_at").order("name"),
-    supabase.from("care_tasks").select("id,code,name,kind,interval_hours,last_completed_at,last_completed_by,next_due_at").order("next_due_at", { ascending: true, nullsFirst: false }),
+    supabase.from("care_tasks").select("id,code,name,kind,interval_hours,last_completed_at,last_completed_by,next_due_at,created_at").order("next_due_at", { ascending: true, nullsFirst: false }),
     supabase.from("care_events").select("id,task_id,actor,occurred_at,cat_id,amount_grams,note").order("occurred_at", { ascending: false }).limit(200),
     supabase.from("inventory_items").select("id,name,quantity,unit,low_stock_at,updated_at").order("name"),
     supabase.from("household_members").select("id,name,role,created_at").order("name"),
