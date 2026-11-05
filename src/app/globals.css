@@ -189,11 +189,13 @@ button:focus-visible, a:focus-visible { outline: 3px solid #69b99c; outline-offs
 .login-form .brand-icon { color: #17664f; justify-content: center; }
 .login-form label { text-align: left; }
 .household-member-list { display: flex; flex-direction: column; max-height: 45vh; overflow-y: auto; }
-.household-member-row { min-height: 58px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid #edf0eb; }
+.household-member-row { min-height: 58px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid #edf0eb; }
 .household-member-row > span:nth-child(2) { display: flex; flex: 1; flex-direction: column; gap: 2px; }
 .household-member-row strong { font-size: 14px; }
 .household-member-row small { color: #7b8680; font-size: 12px; }
 .household-member-row > button { border: 0; border-radius: 7px; background: #fff1ee; padding: 7px 9px; color: #a43b32; font-size: 12px; font-weight: 650; cursor: pointer; }
+.household-member-row > .self-member-button { background: #eef3ef; color: #42614f; white-space: nowrap; }
+.household-member-row.is-self > .self-member-button { background: #dff1e6; color: #126348; }
 .household-manager > p { margin-bottom: 0; }
 .cats-add-button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #1a634d; border-radius: 11px; padding: 9px 15px; background: #fff; color: #174f3e; font-weight: 700; cursor: pointer; }
 .cats-add-button:hover { background: #edf7f0; }

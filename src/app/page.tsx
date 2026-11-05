@@ -94,6 +94,7 @@ type CatDocument = { id: string; cat_id: string; name: string; document_type: "v
 type CatMedicalRecord = { id: string; cat_id: string; title: string; record_type: "visit" | "diagnosis" | "treatment" | "vaccination" | "other"; recorded_on: string; clinic: string | null; notes: string | null; created_at: string };
 type DashboardData = { cats: Cat[]; tasks: CareTask[]; events: CareEvent[]; inventory: InventoryItem[]; members: HouseholdMember[]; weightLogs: WeightLog[]; reminders: CareReminder[]; documents: CatDocument[]; medicalRecords: CatMedicalRecord[]; serverTime: string };
 type EntryMode = "cat" | "task" | "inventory" | "member" | "reminder" | "weight" | "document" | "medical" | null;
+const SELF_MEMBER_STORAGE_KEY = "miaucare-self-member-id";
 
 const kindPresentation: Record<CareTask["kind"], { icon: IconName; color: string; label: string }> = {
   water: { icon: "water", color: "blue", label: "Agua" },
@@ -165,6 +166,7 @@ export default function Home() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [householdOpen, setHouseholdOpen] = useState(false);
+  const [selfMemberId, setSelfMemberId] = useState("");
   const [editingCat, setEditingCat] = useState<Cat | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
@@ -192,6 +194,14 @@ export default function Home() {
 
   useEffect(() => () => {
     if (photoPreviewUrlRef.current) URL.revokeObjectURL(photoPreviewUrlRef.current);
+  }, []);
+
+  useEffect(() => {
+    try {
+      setSelfMemberId(window.localStorage.getItem(SELF_MEMBER_STORAGE_KEY) ?? "");
+    } catch {
+      setSelfMemberId("");
+    }
   }, []);
 
   const loadDashboard = useCallback(async () => {
@@ -230,7 +240,32 @@ export default function Home() {
   const catById = useMemo(() => new Map((data?.cats ?? []).map((cat) => [cat.id, cat])), [data?.cats]);
   const actor = data?.events[0]?.actor || "";
   const members = data?.members ?? [];
-  const defaultActor = actor || members[0]?.name || "";
+  const selfMember = members.find((member) => member.id === selfMemberId) ?? null;
+  const defaultActor = selfMember?.name || actor || members[0]?.name || "";
+  useEffect(() => {
+    if (!data || !selfMemberId || members.some((member) => member.id === selfMemberId)) return;
+    setSelfMemberId("");
+    try {
+      window.localStorage.removeItem(SELF_MEMBER_STORAGE_KEY);
+    } catch {}
+  }, [data, members, selfMemberId]);
+
+  const selectSelfMember = (member: HouseholdMember) => {
+    setSelfMemberId(member.id);
+    setMobileRecordActor(member.name);
+    try {
+      window.localStorage.setItem(SELF_MEMBER_STORAGE_KEY, member.id);
+    } catch {
+      setNotice("No se pudo guardar la persona en este dispositivo.");
+    }
+  };
+
+  const clearSelfMember = () => {
+    setSelfMemberId("");
+    try {
+      window.localStorage.removeItem(SELF_MEMBER_STORAGE_KEY);
+    } catch {}
+  };
   const pendingTasks = useMemo(() => now === null ? [] : (data?.tasks ?? []).filter((task) => !task.last_completed_at || !task.next_due_at || new Date(task.next_due_at).getTime() <= now), [data?.tasks, now]);
   const weekEvents = now === null ? [] : (data?.events ?? []).filter((event) => now - new Date(event.occurred_at).getTime() <= 7 * 86_400_000);
   const overdueTasks = now === null ? 0 : (data?.tasks ?? []).filter((task) => task.next_due_at && new Date(task.next_due_at).getTime() < now).length;
@@ -275,7 +310,7 @@ export default function Home() {
 
   const finishTask = async (task: CareTask) => {
     if (recordingTaskIdsRef.current.has(task.id)) return;
-    const actorName = window.prompt("¿Quién ha realizado este cuidado?", defaultActor);
+    const actorName = selfMember?.name ?? window.prompt("¿Quién ha realizado este cuidado?", defaultActor);
     if (!actorName?.trim()) return;
     let catId: string | null = null;
     let amountGrams: number | null = null;
@@ -313,14 +348,15 @@ export default function Home() {
 
   const submitMobileTaskRecord = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!mobileRecordTask || !mobileRecordActor.trim()) return;
+    const actorName = selfMember?.name ?? mobileRecordActor;
+    if (!mobileRecordTask || !actorName.trim()) return;
     const amount = mobileRecordAmount.trim() ? Number(mobileRecordAmount) : null;
     if (amount !== null && (!Number.isInteger(amount) || amount <= 0)) {
       setMobileRecordError("La cantidad debe ser un número de gramos mayor que cero.");
       return;
     }
     const catId = mobileRecordTask.kind === "food" ? mobileRecordCatId || null : null;
-    void submitCareTask(mobileRecordTask, mobileRecordActor, catId, mobileRecordTask.kind === "food" ? amount : null, true);
+    void submitCareTask(mobileRecordTask, actorName, catId, mobileRecordTask.kind === "food" ? amount : null, true);
   };
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -414,6 +450,7 @@ export default function Home() {
       setNotice(result.error || "No se pudo quitar a la persona.");
       return;
     }
+    if (selfMemberId === member.id) clearSelfMember();
     await loadDashboard();
   };
 
@@ -654,23 +691,23 @@ export default function Home() {
         <button type="button" className="modal-close" onClick={() => setMobileRecordTask(null)} aria-label="Cerrar" disabled={recordingTaskIds.has(mobileRecordTask.id)}>×</button>
         <span className={`icon-tile ${kindPresentation[mobileRecordTask.kind].color}`}><Icon name={kindPresentation[mobileRecordTask.kind].icon} size={22} /></span>
         <h2>Registrar {mobileRecordTask.name.toLocaleLowerCase("es")}</h2>
-        <p>El registro se guardará en el historial del hogar.</p>
-        <label>Quién lo ha hecho<input value={mobileRecordActor} onChange={(event) => setMobileRecordActor(event.target.value)} maxLength={80} required autoFocus /></label>
+        <p>{selfMember ? <>Se registrará a tu nombre: <strong>{selfMember.name}</strong>.</> : "El registro se guardará en el historial del hogar."}</p>
+        {!selfMember && <label>Quién lo ha hecho<input value={mobileRecordActor} onChange={(event) => setMobileRecordActor(event.target.value)} maxLength={80} required autoFocus /></label>}
         {mobileRecordTask.kind === "food" && <>
           <label>Cantidad (gramos, opcional)<input type="number" min="1" step="1" inputMode="numeric" value={mobileRecordAmount} onChange={(event) => setMobileRecordAmount(event.target.value)} placeholder="Ej. 80" /></label>
           {data?.cats.length ? <label>Gato<select value={mobileRecordCatId} onChange={(event) => setMobileRecordCatId(event.target.value)}><option value="">Todos los gatos</option>{data.cats.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label> : null}
         </>}
         {mobileRecordError && <p className="form-error" role="alert">{mobileRecordError}</p>}
-        <button className="register-button mobile-record-submit" disabled={recordingTaskIds.has(mobileRecordTask.id) || !mobileRecordActor.trim()}><Icon name={recordingTaskIds.has(mobileRecordTask.id) ? "sync" : "check"} size={18} />{recordingTaskIds.has(mobileRecordTask.id) ? "Guardando…" : "Guardar registro"}</button>
+        <button className="register-button mobile-record-submit" disabled={recordingTaskIds.has(mobileRecordTask.id) || !(selfMember?.name || mobileRecordActor).trim()}><Icon name={recordingTaskIds.has(mobileRecordTask.id) ? "sync" : "check"} size={18} />{recordingTaskIds.has(mobileRecordTask.id) ? "Guardando…" : "Guardar registro"}</button>
       </form></div>}
 
       {needsLogin && <div className="modal-overlay"><form className="entry-form login-form" onSubmit={submitLogin}><span className="brand-icon"><Icon name="cats" size={34} /></span><h2>Accede a MiauCare</h2><p>Introduce la contraseña de tu hogar para abrir el panel.</p><label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>{formError && <p className="form-error">{formError}</p>}<button className="register-button form-submit">Entrar</button></form></div>}
 
       {householdOpen && <div className="modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setHouseholdOpen(false); }}><section className="entry-form household-manager">
         <button type="button" className="modal-close" onClick={() => setHouseholdOpen(false)} aria-label="Cerrar">×</button>
-        <h2>Mi hogar</h2><p>Personas registradas en este hogar y en sus cuidados.</p>
+        <h2>Mi hogar</h2><p>Elige “Soy yo” junto a tu nombre para firmar automáticamente los cuidados desde este dispositivo.</p>
         <div className="household-member-list">
-          {members.map((member) => <div className="household-member-row" key={member.id}><span className="person-avatar">{member.name.slice(0, 1).toLocaleUpperCase("es")}</span><span><strong>{member.name}</strong><small>{member.role}</small></span><button type="button" onClick={() => void removeMember(member)} aria-label={`Quitar a ${member.name}`}>Quitar</button></div>)}
+          {members.map((member) => <div className={`household-member-row ${selfMemberId === member.id ? "is-self" : ""}`} key={member.id}><span className="person-avatar">{member.name.slice(0, 1).toLocaleUpperCase("es")}</span><span><strong>{member.name}</strong><small>{member.role}</small></span><button type="button" className="self-member-button" aria-pressed={selfMemberId === member.id} onClick={() => selectSelfMember(member)}>Soy yo</button><button type="button" onClick={() => void removeMember(member)} aria-label={`Quitar a ${member.name}`}>Quitar</button></div>)}
           {members.length === 0 && <div className="empty-row">Aún no hay personas guardadas en el hogar.</div>}
         </div>
         <button className="register-button form-submit" onClick={() => { setHouseholdOpen(false); setFormError(""); setEntryMode("member"); }}><Icon name="plus" size={17} /> Añadir persona</button>
